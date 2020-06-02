@@ -6,7 +6,7 @@
 
 process* head;
 process* tail;
-unsigned queue_length = 0;
+unsigned queue_length;
 
 void* safe_malloc(size_t size) {
   void* p;
@@ -20,35 +20,32 @@ void* safe_malloc(size_t size) {
 }
 
 void enqueue(pid_t pid, char* name) {
-  process* new_node;
-  new_node = safe_malloc(sizeof(new_node));
-  new_node->id = (queue_length++);
+  process* new_node = safe_malloc(sizeof(new_node));
   new_node->pid = pid;
   new_node->name = name;
-  if (head == NULL) {
-    head = new_node;
-  } else {
-    tail->next = new_node;
-  }
+  process* temp = head;
+  while (temp->next != NULL) temp = temp->next;
+
+  temp->next = new_node;
   tail = new_node;
-  tail->next = head;
+  queue_length++;
 }
 
 void dequeue(pid_t pid) {
   process* temp = head;
-  unsigned count = 0;
-  while (1) {
-    if (count > queue_length) {
-      fprintf(stderr, "PID not found in queue");
-      exit(1);
-    }
-    if (temp->next->pid == pid) break;
-    temp = temp->next;
-    count++;
-  }
+  while (temp->next->pid != pid) temp = temp->next;
 
   process* to_delete = temp->next;
-  temp->next = temp->next->next;
   free(to_delete);
+  temp->next = temp->next->next;
   queue_length--;
+  if (queue_length == 0) {
+    printf("Done!\n");
+    exit(10);
+  }
+}
+
+void rotate_queue() {
+  head = head->next;
+  tail = tail->next;
 }

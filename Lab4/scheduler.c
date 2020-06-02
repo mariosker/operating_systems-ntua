@@ -64,10 +64,8 @@ static void sigchld_handler(int signum) {
       printf("Parent: Received SIGCHLD, child is dead.\n");
 
       dequeue(head->pid);
-      if (head == NULL) {
-        printf("Job done\n");
-        exit(0);
-      }
+
+      rotate_queue();
 
       fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",
               (long int)head->pid);
@@ -84,18 +82,20 @@ static void sigchld_handler(int signum) {
     }
     if (WIFSTOPPED(status)) {
       /* A child has stopped due to SIGSTOP/SIGTSTP, etc... */
-      head = head->next;
-      tail = tail->next;
 
-      /* Setup the alarm again */
-      if (alarm(SCHED_TQ_SEC) < 0) {
-        perror("alarm");
-        exit(1);
-      }
+      // rotate queue
+      rotate_queue();
+
       fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",
               (long int)head->pid);
       if (kill(head->pid, SIGCONT) < 0) {
         perror("Continue to process");
+        exit(1);
+      }
+
+      /* Setup the alarm again */
+      if (alarm(SCHED_TQ_SEC) < 0) {
+        perror("alarm");
         exit(1);
       }
     }
@@ -145,9 +145,7 @@ void child(char *name) {
   printf("I am %s, PID = %ld\n", name, (long)getpid());
   printf("About to replace myself with the executable %s...\n", name);
   sleep(2);
-
   raise(SIGSTOP);
-
   execve(name, newargv, newenviron);
 
   /* execve() only returns on error */
@@ -158,27 +156,32 @@ void child(char *name) {
 int main(int argc, char *argv[]) {
   int nproc;
   pid_t pid;
+  queue_length = 0;
   /*
    * For each of argv[1] to argv[argc - 1],
    * create a new child process, add it to the process list.
    */
 
-  nproc = argc - 1; /* number of proccesses goes here */
+  nproc = argc; /* number of proccesses goes here */
 
-  for (int i = 0; i < nproc; ++i) {
+  head = safe_malloc(sizeof(process));
+  head->next = NULL;
+
+  for (int i = 1; i < nproc; i++) {
     printf("Parent: Creating child...\n");
     pid = fork();
+
     if (pid < 0) {
       perror("fork");
       exit(1);
     } else if (pid == 0) {
       fprintf(stderr, "A new proccess is created with pid=%ld \n",
               (long int)getpid());
-      // TODO: here is raise(SIGSTOP);
-      child(argv[i + 1]);
+
+      child(argv[i]);
       assert(0);
     } else {
-      enqueue(pid, argv[i + 1]);
+      enqueue(pid, argv[i]);
       printf(
           "Parent: Created child with PID = %ld, waiting for it to "
           "terminate...\n",
@@ -186,8 +189,13 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  // make the queue circular
+  head = head->next;
+  free(tail->next);
+  tail->next = head;
+
   /* Wait for all children to raise SIGSTOP before exec()ing. */
-  wait_for_ready_children(nproc);
+  wait_for_ready_children(nproc - 1);
 
   /* Install SIGALRM and SIGCHLD handlers. */
   install_signal_handlers();
@@ -197,16 +205,20 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+  fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",
+          (long int)head->pid);
+
+  if (kill(head->pid, SIGCONT) < 0) {
+    perror("First child error with continuing");
+    exit(1);
+  }
+
   if (alarm(SCHED_TQ_SEC) < 0) {
     perror("alarm");
     exit(1);
   }
 
-  fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",
-          (long int)head->pid);
-  kill(head->pid, SIGCONT);
-
-  /* loop forever  until we exit from inside a signal handler. */
+  /* loop forever until we exit from inside a signal handler. */
   while (pause())
     ;
 

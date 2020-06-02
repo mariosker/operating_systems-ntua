@@ -12,4 +12,5 @@ typedef struct process_s {
 void *safe_malloc(size_t size);
 void enqueue(pid_t pid, char *name);
 void dequeue(pid_t pid);
+void rotate_queue();
 #endif
