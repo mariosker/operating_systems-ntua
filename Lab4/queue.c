@@ -22,6 +22,7 @@ void* safe_malloc(size_t size) {
 void enqueue(pid_t pid, char* name) {
   process* new_node = safe_malloc(sizeof(new_node));
   new_node->pid = pid;
+  new_node->id = queue_length;
   new_node->name = name;
   process* temp = head;
   while (temp->next != NULL) temp = temp->next;

@@ -13,8 +13,8 @@ all: scheduler scheduler-shell shell prog execve-example strace-test sigchld-exa
 scheduler: scheduler.o proc-common.o queue.o
 	$(CC) -o scheduler scheduler.o proc-common.o queue.o
 
-scheduler-shell: scheduler-shell.o proc-common.o
-	$(CC) -o scheduler-shell scheduler-shell.o proc-common.o
+scheduler-shell: scheduler-shell.o proc-common.o queue.o
+	$(CC) -o scheduler-shell scheduler-shell.o proc-common.o queue.o
 
 shell: shell.o proc-common.o
 	$(CC) -o shell shell.o proc-common.o
@@ -37,10 +37,10 @@ proc-common.o: proc-common.c proc-common.h
 shell.o: shell.c proc-common.h request.h
 	$(CC) $(CFLAGS) -o shell.o -c shell.c
 
-scheduler.o: scheduler.c proc-common.h request.h
+scheduler.o: scheduler.c proc-common.h request.h queue.h
 	$(CC) $(CFLAGS) -o scheduler.o -c scheduler.c
 
-scheduler-shell.o: scheduler-shell.c proc-common.h request.h
+scheduler-shell.o: scheduler-shell.c proc-common.h request.h queue.h
 	$(CC) $(CFLAGS) -o scheduler-shell.o -c scheduler-shell.c
 
 prog.o: prog.c
