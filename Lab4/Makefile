@@ -5,16 +5,18 @@
 #
 
 CC = gcc
-#CFLAGS = -Wall -g
 CFLAGS = -Wall -O2 -g
 
-all: scheduler scheduler-shell shell prog execve-example strace-test sigchld-example queue.o
+all: scheduler scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example queue.o
 
 scheduler: scheduler.o proc-common.o queue.o
 	$(CC) -o scheduler scheduler.o proc-common.o queue.o
 
 scheduler-shell: scheduler-shell.o proc-common.o queue.o
 	$(CC) -o scheduler-shell scheduler-shell.o proc-common.o queue.o
+
+scheduler-shell-priority: scheduler-shell-priority.o proc-common.o queue.o
+	$(CC) -o scheduler-shell-priority scheduler-shell-priority.o proc-common.o queue.o
 
 shell: shell.o proc-common.o
 	$(CC) -o shell shell.o proc-common.o
@@ -43,6 +45,9 @@ scheduler.o: scheduler.c proc-common.h request.h queue.h
 scheduler-shell.o: scheduler-shell.c proc-common.h request.h queue.h
 	$(CC) $(CFLAGS) -o scheduler-shell.o -c scheduler-shell.c
 
+scheduler-shell-priority.o: scheduler-shell-priority.c proc-common.h request.h queue.h
+	$(CC) $(CFLAGS) -o scheduler-shell-priority.o -c scheduler-shell-priority.c
+
 prog.o: prog.c
 	$(CC) $(CFLAGS) -o prog.o -c prog.c
 
@@ -59,4 +64,4 @@ queue.o: queue.c
 	$(CC) $(CFLAGS) -o queue.o -c queue.c
 
 clean:
-	rm -f scheduler scheduler-shell shell prog execve-example strace-test sigchld-example *.o
+	rm -f scheduler scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example *.o
