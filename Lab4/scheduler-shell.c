@@ -18,14 +18,14 @@
 #define SHELL_EXECUTABLE_NAME "shell" /* executable for shell */
 
 process *head, *tail;
-unsigned queue_length;
+unsigned queue_length, queue_max;
 
 /* Print a list of all tasks currently being scheduled.  */
 static void sched_print_tasks(void) {
   process *temp = head;
-  print("Current Process: ");
+  printf("Current Process: ");
   for (int i = 0; i < queue_length; i++) {
-    if (temp != head) print("                ");
+    if (temp != head) printf("                 ");
     printf("ID: %d, PID: %d, NAME: %s\n", temp->id, temp->pid, temp->name);
     temp = temp->next;
   }
@@ -35,13 +35,65 @@ static void sched_print_tasks(void) {
  * scheduler-specific id.
  */
 static int sched_kill_task_by_id(int id) {
-  assert(0 && "Please fill me!");
-  return -ENOSYS;
+  process *temp = head;
+
+  while (temp->id != id) {
+    temp = temp->next;
+    if (temp == head) {
+      printf("ID not in process queue\n");
+      return -1;
+    }
+  }
+  printf("ID: %d, PID: %d, NAME: %s is being killed\n", temp->id, temp->pid,
+         temp->name);
+
+  if (kill(temp->pid, SIGKILL) < 0) {
+    perror("kill");
+  }
+
+  head = temp;
+  return 1;
+}
+
+void child(char *name) {
+  char *newargv[] = {name, NULL, NULL, NULL};
+  char *newenviron[] = {NULL};
+
+  printf("I am %s, PID = %ld\n", name, (long)getpid());
+  printf("About to replace myself with the executable %s...\n", name);
+  sleep(2);
+  raise(SIGSTOP);
+  execve(name, newargv, newenviron);
+
+  /* execve() only returns on error */
+  perror("execve");
+  exit(1);
 }
 
 /* Create a new task.  */
 static void sched_create_task(char *executable) {
-  assert(0 && "Please fill me!");
+  pid_t pid;
+
+  pid = fork();
+  if (pid < 0) {
+    perror("fork");
+    exit(1);
+  } else if (pid == 0) {
+    fprintf(stderr, "A new proccess is created with pid=%ld \n",
+            (long int)getpid());
+
+    child(executable);
+    assert(0);
+  } else {
+    show_pstree(getpid());
+    tail->next = NULL;  // make queue linear for enqueue
+    enqueue(pid, executable);
+    tail->next = head;  // make queue circular again
+    printf(
+        "Parent: Created child with PID = %ld, waiting for it to "
+        "terminate...\n",
+        (long)pid);
+  }
 }
 
 /* Process requests by the shell.  */
@@ -255,6 +307,15 @@ static void sched_create_shell(char *executable, int *request_fd,
     do_shell(executable, pfds_rq[1], pfds_ret[0]);
     assert(0);
   }
+
+  // initialize queue with the shell process
+  head = (process *)malloc(sizeof(process));
+  head->id = 0;
+  head->pid = p;
+  head->name = SHELL_EXECUTABLE_NAME;
+  tail = head;
+  tail->next = NULL;
+
   /* Parent */
   close(pfds_rq[1]);
   close(pfds_ret[0]);
@@ -290,28 +351,66 @@ static void shell_request_loop(int request_fd, int return_fd) {
 
 int main(int argc, char *argv[]) {
   int nproc;
+  pid_t pid;
   /* Two file descriptors for communication with the shell */
   static int request_fd, return_fd;
 
   /* Create the shell. */
   sched_create_shell(SHELL_EXECUTABLE_NAME, &request_fd, &return_fd);
-  /* TODO: add the shell to the scheduler's tasks */
 
   /*
    * For each of argv[1] to argv[argc - 1],
    * create a new child process, add it to the process list.
    */
+  queue_length = 0;
+  queue_max = 0;
+  nproc = argc; /* number of proccesses goes here */
 
-  nproc = 0; /* number of proccesses goes here */
+  for (int i = 1; i < nproc; i++) {
+    printf("Parent: Creating child...\n");
+    pid = fork();
+
+    if (pid < 0) {
+      perror("fork");
+      exit(1);
+    } else if (pid == 0) {
+      fprintf(stderr, "A new proccess is created with pid=%ld \n",
+              (long int)getpid());
+
+      child(argv[i]);
+      assert(0);
+    } else {
+      enqueue(pid, argv[i]);
+      printf(
+          "Parent: Created child with PID = %ld, waiting for it to "
+          "terminate...\n",
+          (long)pid);
+    }
+  }
+  // make the queue circular
+
+  free(tail->next);
+  tail->next = head;
 
   /* Wait for all children to raise SIGSTOP before exec()ing. */
   wait_for_ready_children(nproc);
+  show_pstree(getpid());
 
   /* Install SIGALRM and SIGCHLD handlers. */
   install_signal_handlers();
 
   if (nproc == 0) {
     fprintf(stderr, "Scheduler: No tasks. Exiting...\n");
+    exit(1);
+  }
+
+  if (kill(head->pid, SIGCONT) < 0) {
+    perror("First child error with continuing");
+    exit(1);
+  }
+
+  if (alarm(SCHED_TQ_SEC) < 0) {
+    perror("alarm");
     exit(1);
   }
 

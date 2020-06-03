@@ -7,6 +7,7 @@
 process* head;
 process* tail;
 unsigned queue_length;
+unsigned queue_max;
 
 void* safe_malloc(size_t size) {
   void* p;
@@ -20,16 +21,17 @@ void* safe_malloc(size_t size) {
 }
 
 void enqueue(pid_t pid, char* name) {
+  queue_length++;
+  queue_max++;
   process* new_node = safe_malloc(sizeof(new_node));
   new_node->pid = pid;
-  new_node->id = queue_length;
+  new_node->id = queue_max;
   new_node->name = name;
   process* temp = head;
   while (temp->next != NULL) temp = temp->next;
 
   temp->next = new_node;
   tail = new_node;
-  queue_length++;
 }
 
 void dequeue(pid_t pid) {
