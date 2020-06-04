@@ -7,7 +7,13 @@
 CC = gcc
 CFLAGS = -Wall -O2 -g
 
-all: scheduler scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example queue.o
+all: scheduler scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example queue.o gkovanis
+
+gkovanis: gkovanis.o proc-common.o
+	$(CC) -o gkovanis gkovanis.o proc-common.o
+
+gkovanis.o: gkovanis.c proc-common.h request.h
+	$(CC) $(CFLAGS) -o gkovanis.o -c gkovanis.c
 
 scheduler: scheduler.o proc-common.o queue.o
 	$(CC) -o scheduler scheduler.o proc-common.o queue.o
@@ -15,8 +21,8 @@ scheduler: scheduler.o proc-common.o queue.o
 scheduler-shell: scheduler-shell.o proc-common.o queue.o
 	$(CC) -o scheduler-shell scheduler-shell.o proc-common.o queue.o
 
-scheduler-shell-priority: scheduler-shell-priority.o proc-common.o queue.o
-	$(CC) -o scheduler-shell-priority scheduler-shell-priority.o proc-common.o queue.o
+scheduler-shell-priority: scheduler-shell-priority.o proc-common.o queue-priority.o
+	$(CC) -o scheduler-shell-priority scheduler-shell-priority.o proc-common.o queue-priority.o
 
 shell: shell.o proc-common.o
 	$(CC) -o shell shell.o proc-common.o
@@ -45,7 +51,7 @@ scheduler.o: scheduler.c proc-common.h request.h queue.h
 scheduler-shell.o: scheduler-shell.c proc-common.h request.h queue.h
 	$(CC) $(CFLAGS) -o scheduler-shell.o -c scheduler-shell.c
 
-scheduler-shell-priority.o: scheduler-shell-priority.c proc-common.h request.h queue.h
+scheduler-shell-priority.o: scheduler-shell-priority.c proc-common.h request.h queue-priority.h
 	$(CC) $(CFLAGS) -o scheduler-shell-priority.o -c scheduler-shell-priority.c
 
 prog.o: prog.c
@@ -62,6 +68,9 @@ sigchld-example.o: sigchld-example.c
 
 queue.o: queue.c
 	$(CC) $(CFLAGS) -o queue.o -c queue.c
+
+queue-priority.o: queue-priority.c
+	$(CC) $(CFLAGS) -o queue-priority.o -c queue-priority.c
 
 clean:
 	rm -f scheduler scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example *.o

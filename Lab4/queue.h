@@ -7,7 +7,6 @@ typedef struct process_s {
   unsigned id;
   pid_t pid;
   char *name;
-  int h_priority; /* 0 is LOW, 1 is HIGH */
   struct process_s *next;
 } process;
 

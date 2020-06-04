@@ -8,7 +8,6 @@ process* head;
 process* tail;
 unsigned queue_length;
 unsigned queue_max;
-unsigned h_count;
 
 void* safe_malloc(size_t size) {
   void* p;
@@ -25,7 +24,6 @@ void enqueue(pid_t pid, char* name) {
   queue_max++;
   process* new_node = safe_malloc(sizeof(process));
   new_node->pid = pid;
-  new_node->h_priority = 0;
   new_node->id = queue_max;
   new_node->name = name;
   process* temp = head;
@@ -40,7 +38,6 @@ void dequeue(pid_t pid) {
   while (temp->next->pid != pid) temp = temp->next;
 
   process* to_delete = temp->next;
-  if (to_delete->h_priority == 1) h_count--;
   free(to_delete);
   temp->next = temp->next->next;
   queue_length--;
