@@ -7,13 +7,7 @@
 CC = gcc
 CFLAGS = -Wall -O2 -g
 
-all: scheduler scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example queue.o gkovanis
-
-gkovanis: gkovanis.o proc-common.o
-	$(CC) -o gkovanis gkovanis.o proc-common.o
-
-gkovanis.o: gkovanis.c proc-common.h request.h
-	$(CC) $(CFLAGS) -o gkovanis.o -c gkovanis.c
+all: scheduler scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example queue.o
 
 scheduler: scheduler.o proc-common.o queue.o
 	$(CC) -o scheduler scheduler.o proc-common.o queue.o

@@ -21,6 +21,5 @@ void enqueue(list *queue, pid_t pid, char *name, int has_id);
 void dequeue(list *queue, pid_t pid);
 void rotate_queue(list *queue);
 process *search_by_id(list *queue, int id);
-process *search_by_name(list *queue, char *name);
 void print_queue(list *queue);
 #endif

@@ -13,7 +13,7 @@
 #include "request.h"
 
 /* Compile-time parameters. */
-#define SCHED_TQ_SEC 5                /* time quantum */
+#define SCHED_TQ_SEC 2                /* time quantum */
 #define TASK_NAME_SZ 60               /* maximum size for a task's name */
 #define SHELL_EXECUTABLE_NAME "shell" /* executable for shell */
 
@@ -23,9 +23,10 @@ unsigned queue_max;
 /* Print a list of all tasks currently being scheduled.  */
 static void sched_print_tasks(void) {
   process *temp = hp_queue->head;
+  printf("==================================================\n");
+  printf("                 ");
+  printf("HIGH priority list with size = %d\n", hp_queue->queue_length);
   if (hp_queue->queue_length > 0) {
-    printf("                 ");
-    printf("HIGH priority list with size = %d\n", hp_queue->queue_length);
     printf("Current Process: ");
   }
   for (int i = 0; i < hp_queue->queue_length; i++) {
@@ -33,6 +34,8 @@ static void sched_print_tasks(void) {
     printf("ID: %d, PID: %d, NAME: %s\n", temp->id, temp->pid, temp->name);
     temp = temp->next;
   }
+
+  printf("==================================================\n");
 
   temp = lp_queue->head;
   printf("                 ");
@@ -43,6 +46,7 @@ static void sched_print_tasks(void) {
     printf("ID: %d, PID: %d, NAME: %s\n", temp->id, temp->pid, temp->name);
     temp = temp->next;
   }
+  printf("==================================================\n");
 }
 
 /* Send SIGKILL to a task determined by the value of its
@@ -62,7 +66,6 @@ static int sched_kill_task_by_id(int id) {
     printf("ID: %d, PID: %d, NAME: %s is being killed\n", temp->id, temp->pid,
            temp->name);
 
-    // if (strcmp(lp_queue->head->name, SHELL_EXECUTABLE_NAME) == 0) return -1;
     if (kill(temp->pid, SIGKILL) < 0) {
       perror("kill");
     } else {
@@ -123,14 +126,8 @@ static void sched_create_task(char *executable) {
 static int sched_set_high_p(int id) {
   process *temp;
   temp = search_by_id(lp_queue, id);
-  fprintf(stderr, "->>>>>>>>>>>>>>>>>>> pid=%ld\n", (long int)temp->pid);
 
   if (temp != NULL) {
-    // if (hp_queue->queue_length == 0) {
-    //   process *tt = search_by_name(lp_queue, SHELL_EXECUTABLE_NAME);
-    //   enqueue(hp_queue, tt->pid, SHELL_EXECUTABLE_NAME, tt->id);
-    //   dequeue(lp_queue, tt->pid);
-    // }
     enqueue(hp_queue, temp->pid, temp->name, id);
     printf("ID: %d, PID: %d, NAME: %s has HIGH priority now\n", temp->id,
            temp->pid, temp->name);
@@ -152,12 +149,6 @@ static int sched_set_low_p(int id) {
   process *temp = search_by_id(hp_queue, id);
 
   if (temp != NULL) {
-    // if (lp_queue->queue_length == 2) {
-    //   process *tt = search_by_name(lp_queue, SHELL_EXECUTABLE_NAME);
-    //   enqueue(lp_queue, tt->pid, SHELL_EXECUTABLE_NAME, tt->id);
-    //   dequeue(hp_queue, tt->pid);
-    // }
-
     enqueue(lp_queue, temp->pid, temp->name, id);
     printf("ID: %d, PID: %d, NAME: %s has LOW priority now\n", temp->id,
            temp->pid, temp->name);
@@ -251,25 +242,9 @@ static void sigchld_handler(int signum) {
 
       if (hp_queue->queue_length) {
         printf("Parent: Received SIGCHLD, child is dead.\n");
-        if (hp_queue->queue_length == 1) {
-          // if (strcmp(hp_queue->head->name, SHELL_EXECUTABLE_NAME) == 0) {
-          //   process *tt = hp_queue->head;
-          //   dequeue(hp_queue, hp_queue->head->pid);
-          //   enqueue(lp_queue, tt->pid, tt->name, tt->id);
-          //   return;
-          // }
-        }
 
         dequeue(hp_queue, hp_queue->head->pid);
 
-        // if (hp_queue->queue_length == 1) {
-        //   if (strcmp(hp_queue->head->name, SHELL_EXECUTABLE_NAME) == 0) {
-        //     process *tt = hp_queue->head;
-        //     dequeue(hp_queue, hp_queue->head->pid);
-        //     enqueue(lp_queue, tt->pid, tt->name, tt->id);
-        //     return;
-        //   }
-        // }
         if (hp_queue->queue_length == 0) return;
         if (hp_queue->queue_length > 1) rotate_queue(hp_queue);
 
@@ -288,6 +263,7 @@ static void sigchld_handler(int signum) {
         }
         dequeue(lp_queue, lp_queue->head->pid);
 
+        // if (lp_queue->queue_length > 1)
         rotate_queue(lp_queue);
 
         fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",
@@ -308,14 +284,15 @@ static void sigchld_handler(int signum) {
       /* A child has stopped due to SIGSTOP/SIGTSTP, etc... */
 
       if (hp_queue->queue_length) {
-        // if (hp_queue->queue_length != 1) rotate_queue(hp_queue);
-        // fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",
-        //         (long int)hp_queue->head->pid);
-        // if (kill(hp_queue->head->pid, SIGCONT) < 0) {
-        //   perror("Continue to process");
-        //   exit(1);
-        // }
+        if (hp_queue->queue_length != 1) rotate_queue(hp_queue);
+        fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",
+                (long int)hp_queue->head->pid);
+        if (kill(hp_queue->head->pid, SIGCONT) < 0) {
+          perror("Continue to process");
+          exit(1);
+        }
       } else {
+        // if (lp_queue->queue_length > 1)
         rotate_queue(lp_queue);
         fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",
                 (long int)lp_queue->head->pid);
@@ -324,6 +301,7 @@ static void sigchld_handler(int signum) {
           exit(1);
         }
       }
+
       /* Setup the alarm again */
       if (alarm(SCHED_TQ_SEC) < 0) {
         perror("alarm");

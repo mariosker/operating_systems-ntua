@@ -5,7 +5,7 @@
 #include "proc-common.h"
 
 #define NMSG 40
-#define DELAY 1300
+#define DELAY 130
 
 int main(int argc, char *argv[]) {
   int i, delay, pid;
