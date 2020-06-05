@@ -24,7 +24,7 @@ unsigned queue_length, queue_max;
 static void sched_print_tasks(void) {
   process *temp = head;
   printf("Current Process: ");
-  for (int i = 0; i < queue_length; i++) {
+  for (int i = 0; i < queue_length + 1; i++) {
     if (temp != head) printf("                 ");
     printf("ID: %d, PID: %d, NAME: %s\n", temp->id, temp->pid, temp->name);
     temp = temp->next;
@@ -87,7 +87,10 @@ static void sched_create_task(char *executable) {
   } else {
     show_pstree(getpid());
     tail->next = NULL;  // make queue linear for enqueue
-    enqueue(pid, executable);
+    char *t_name;
+    t_name = safe_malloc(sizeof(executable));
+    strcpy(t_name, executable);
+    enqueue(pid, t_name);
     tail->next = head;  // make queue circular again
     printf(
         "Parent: Created child with PID = %ld, waiting for it to "
