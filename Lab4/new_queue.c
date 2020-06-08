@@ -25,10 +25,10 @@ queue *initialize_queue(void) {
   return q;
 }
 
-process *initialize_process(pid_t pid, char *name) {
+process *initialize_process(pid_t pid, char *name, unsigned r_id) {
   process *p = safe_malloc(sizeof(process));
   p->pid = pid;
-  p->id = id;
+  p->id = r_id;
   p->name = name;
   p->next = NULL;
   return p;
@@ -45,7 +45,8 @@ void enqueue(queue *q, process *new_proc, pid_t pid, char *name) {
   }
 
   if (new_proc == NULL) {
-    new_proc = initialize_process(pid, name);
+    printf(RED "NEW PROC" RST "\n");
+    new_proc = initialize_process(pid, name, id);
     id++;
   }
 

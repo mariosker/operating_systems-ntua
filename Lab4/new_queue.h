@@ -11,6 +11,8 @@
 #define GREEN "\033[0;32m"
 #define RED "\033[0;31m"
 #define BLUE "\033[0;34m"
+#define MAGENTA "\033[0;35m"
+#define CYAN "\033[0;36m"
 #define RST "\033[0m"
 
 typedef int bool;
@@ -30,7 +32,7 @@ typedef struct queue_s {
 
 void* safe_malloc(size_t size);
 queue* initialize_queue(void);
-process* initialize_process(pid_t pid, char* name);
+process* initialize_process(pid_t pid, char* name, unsigned id);
 bool is_empty(queue* q);
 unsigned get_size(queue* q);
 void enqueue(queue* q, process* new_proc, pid_t pid, char* name);

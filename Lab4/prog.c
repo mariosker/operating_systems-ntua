@@ -4,8 +4,8 @@
 
 #include "proc-common.h"
 
-#define NMSG 50
-#define DELAY 200
+#define NMSG 40
+#define DELAY 500
 // #define NMSG 200
 // #define DELAY 130
 
