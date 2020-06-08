@@ -1,4 +1,4 @@
-#include "new_queue.h"
+#include "queue-shell.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,7 +45,6 @@ void enqueue(queue *q, process *new_proc, pid_t pid, char *name) {
   }
 
   if (new_proc == NULL) {
-    printf(RED "NEW PROC" RST "\n");
     new_proc = initialize_process(pid, name, id);
     id++;
   }

@@ -7,22 +7,16 @@
 CC = gcc
 CFLAGS = -Wall -O2 -g
 
-all: scheduler scheduler-shell new_scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example queue.o new_scheduler-shell new_queue.o new_scheduler-shell-priority
+all: scheduler scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example
 
 scheduler: scheduler.o proc-common.o queue.o
 	$(CC) -o scheduler scheduler.o proc-common.o queue.o
 
-scheduler-shell: scheduler-shell.o proc-common.o queue.o
-	$(CC) -o scheduler-shell scheduler-shell.o proc-common.o queue.o
+scheduler-shell: scheduler-shell.o proc-common.o queue-shell.o
+	$(CC) -o scheduler-shell scheduler-shell.o proc-common.o queue-shell.o
 
-new_scheduler-shell: new_scheduler-shell.o proc-common.o new_queue.o
-	$(CC) -o new_scheduler-shell new_scheduler-shell.o proc-common.o new_queue.o
-
-new_scheduler-shell-priority: new_scheduler-shell-priority.o proc-common.o new_queue.o
-	$(CC) -o new_scheduler-shell-priority new_scheduler-shell-priority.o proc-common.o new_queue.o
-
-scheduler-shell-priority: scheduler-shell-priority.o proc-common.o queue-priority.o
-	$(CC) -o scheduler-shell-priority scheduler-shell-priority.o proc-common.o queue-priority.o
+scheduler-shell-priority: scheduler-shell-priority.o proc-common.o queue-shell.o
+	$(CC) -o scheduler-shell-priority scheduler-shell-priority.o proc-common.o queue-shell.o
 
 shell: shell.o proc-common.o
 	$(CC) -o shell shell.o proc-common.o
@@ -48,16 +42,10 @@ shell.o: shell.c proc-common.h request.h
 scheduler.o: scheduler.c proc-common.h request.h queue.h
 	$(CC) $(CFLAGS) -o scheduler.o -c scheduler.c
 
-scheduler-shell.o: scheduler-shell.c proc-common.h request.h queue.h
+scheduler-shell.o: scheduler-shell.c proc-common.h request.h queue-shell.h
 	$(CC) $(CFLAGS) -o scheduler-shell.o -c scheduler-shell.c
 
-new_scheduler-shell.o: new_scheduler-shell.c proc-common.h request.h new_queue.h
-	$(CC) $(CFLAGS) -o new_scheduler-shell.o -c new_scheduler-shell.c
-
-new_scheduler-shell-priority.o: new_scheduler-shell-priority.c proc-common.h request.h new_queue.h
-	$(CC) $(CFLAGS) -o new_scheduler-shell-priority.o -c new_scheduler-shell-priority.c
-
-scheduler-shell-priority.o: scheduler-shell-priority.c proc-common.h request.h queue-priority.h
+scheduler-shell-priority.o: scheduler-shell-priority.c proc-common.h request.h queue-shell.h
 	$(CC) $(CFLAGS) -o scheduler-shell-priority.o -c scheduler-shell-priority.c
 
 prog.o: prog.c
@@ -75,11 +63,8 @@ sigchld-example.o: sigchld-example.c
 queue.o: queue.c
 	$(CC) $(CFLAGS) -o queue.o -c queue.c
 
-new_queue.o: new_queue.c
-	$(CC) $(CFLAGS) -o new_queue.o -c new_queue.c
-
-queue-priority.o: queue-priority.c
-	$(CC) $(CFLAGS) -o queue-priority.o -c queue-priority.c
+queue-shell.o: queue-shell.c
+	$(CC) $(CFLAGS) -o queue-shell.o -c queue-shell.c
 
 clean:
-	rm -f scheduler scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example new_scheduler-shell new_scheduler-shell-priority *.o
+	rm -f scheduler scheduler-shell scheduler-shell-priority shell prog execve-example strace-test sigchld-example *.o
