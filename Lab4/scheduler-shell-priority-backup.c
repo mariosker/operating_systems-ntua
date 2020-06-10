@@ -1,16 +1,3 @@
-/*                         - Known Problems -
- * We built this program based on the scheduler-shell.c code, so the seg-fault
- * carries through this program. Although the program again works fine and all
- * the commands to the shell (e,p,k,q,h,l) have the requested output, sometimes
- * while we are running it a segmentation fault occurs (it may never happen, it
- * may happen just when we start running the program) or a "suspended signal"
- * error. Both of these problems don't occur after a specific sequence of
- * commands or at a specific point in the program, they just appear (if they
- * appear) out of nowhere. (We can't recreate the bug although we have
- * pinpointed the seg-fault in sigchld_handler function- WIFSTOPPED branch -
- * current_process setting)
- */
-
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
@@ -35,7 +22,7 @@ unsigned id = 0;
 queue *lp_queue;
 queue *hp_queue;
 queue *current_queue;
-process current_process;
+process *current_process;
 
 /* Print a list of all tasks currently being scheduled.  */
 static void sched_print_tasks(void) {
@@ -57,7 +44,7 @@ static void sched_print_tasks(void) {
     if (is_empty(hp_queue)) {
       printf(BLUE "Current Process: ");
     }
-    print_queue(lp_queue, !is_empty(hp_queue));
+    print_queue(lp_queue, is_empty(hp_queue));
   }
   printf("-------------------------------------------------\n");
   return;
@@ -200,7 +187,7 @@ static void sigalrm_handler(int signum) {
   }
 
   // kill the proccess
-  if (kill(current_process.pid, SIGSTOP) < 0) {
+  if (kill(current_process->pid, SIGSTOP) < 0) {
     perror("kill- sigalrm_handler");
     exit(1);
   }
@@ -247,13 +234,13 @@ static void sigchld_handler(int signum) {
       // get in if elements have high priority
       if (!is_empty(hp_queue)) {
         // printf(RED "11" RST "\n");
-        rotate_queue_new(hp_queue);
-        current_process = *hp_queue->head;
+        rotate_queue(hp_queue);
+        current_process = hp_queue->head;
 
         fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",
-                (long int)current_process.pid);
+                (long int)current_process->pid);
 
-        if (kill(current_process.pid, SIGCONT) < 0) {
+        if (kill(current_process->pid, SIGCONT) < 0) {
           perror(
               "Continue to process- WIFEXITED-WIFSIGNALED -sigchld_handler1");
           exit(1);
@@ -268,17 +255,17 @@ static void sigchld_handler(int signum) {
         } else {
           // printf(RED "14" RST "\n");
           if (current_queue == hp_queue) {  // previous queue is high queue
-            current_process = *lp_queue->head;
-            if (kill(current_process.pid, SIGCONT) < 0) {
+            current_process = lp_queue->head;
+            if (kill(current_process->pid, SIGCONT) < 0) {
               perror(
                   "Continue to process-WIFEXITED-WIFSIGNALED-sigchld_handler2");
               exit(1);
             }
           } else {  // continue to low queue
             // printf(RED "15" RST "\n");
-            rotate_queue_new(lp_queue);
-            current_process = *lp_queue->head;
-            if (kill(current_process.pid, SIGCONT) < 0) {
+            rotate_queue(lp_queue);
+            current_process = lp_queue->head;
+            if (kill(current_process->pid, SIGCONT) < 0) {
               perror(
                   "Continue to process-WIFEXITED-WIFSIGNALED-sigchld_handler3");
               exit(1);
@@ -304,9 +291,8 @@ static void sigchld_handler(int signum) {
       }
 
       // rotate queue
-      rotate_queue_new(current_queue);
-      // dequeue(current_queue, 0);
-      current_process = *current_queue->head;
+      rotate_queue(current_queue);
+      current_process = current_queue->head;
       pid_t r_pid = current_queue->head->pid;
 
       fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",

@@ -121,7 +121,7 @@ void dequeue(queue *q, pid_t pid) {
   q->size--;
 }
 
-void print_queue(queue *q, bool add_space) {
+void print_queue(queue *q, bool print_head_with_space) {
   if (q == NULL) {
     printf("Queue not initialized\n");
     exit(1);
@@ -134,7 +134,8 @@ void print_queue(queue *q, bool add_space) {
 
   process *p = q->head;
   for (int i = 0; i < q->size; i++) {
-    if (p != q->head && add_space) printf("                 ");
+    if (p == NULL) continue;
+    if (p != q->head || print_head_with_space) printf("                 ");
     printf("ID: %d, PID: %ld, NAME: %s\n" RST, p->id, (long)p->pid, p->name);
     p = p->next;
   }
@@ -153,6 +154,7 @@ process *get_process_by_id(queue *q, unsigned r_id) {
 
   process *p = q->head;
   for (int i = 0; i < q->size; i++) {
+    if (p == NULL) continue;
     if (p->id == r_id) return p;
     p = p->next;
   }
@@ -160,6 +162,29 @@ process *get_process_by_id(queue *q, unsigned r_id) {
 }
 
 void rotate_queue(queue *q) {
+  // if (q->size > 1) {
+  //   process *curr = q->head;
+  //   q->head = q->head->next;
+  //   q->tail->next = curr;
+  //   q->tail = curr;
+  //   q->tail->next = q->head;
+  // }
+  if (q == NULL) {
+    printf("Queue not initialized\n");
+    exit(1);
+  }
+
+  if (is_empty(q)) {
+    printf("Queue is empty\n");
+    return;
+  }
+
+  process *temp = initialize_process(q->head->pid, q->head->name, q->head->id);
+  dequeue(q, temp->pid);
+  enqueue(q, temp, temp->pid, temp->name);
+}
+
+void rotate_queue_new(queue *q) {
   if (q->size > 1) {
     process *curr = q->head;
     q->head = q->head->next;

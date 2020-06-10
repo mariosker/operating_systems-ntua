@@ -40,4 +40,5 @@ void dequeue(queue* q, pid_t pid);
 void print_queue(queue* q, bool add_space);
 process* get_process_by_id(queue* q, unsigned r_id);
 void rotate_queue(queue* q);
+void rotate_queue_new(queue* q);
 #endif  // QUEUE_H_

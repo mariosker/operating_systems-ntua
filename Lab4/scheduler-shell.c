@@ -1,3 +1,12 @@
+/*                        - Known Problems -
+ * Although the program works fine and all the commands to the shell
+ * (e,p,k,q) have the requested output, there rarely occurs a segmentation fault
+ * while we are running it. The problem doesn't occur after a specific sequence
+ * of commands or at a specific point in the program, it just appears (if it
+ * appears) out of nowhere. (We can't recreate the bug although we have
+ * pinpointed the seg-fault in sigchld_handler function).
+ */
+
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
@@ -30,7 +39,7 @@ static void sched_print_tasks(void) {
   }
   printf("Queue has size: %u\n", get_size(p_queue));
   printf(BLUE "Current Process: ");
-  print_queue(p_queue, true);
+  print_queue(p_queue, false);
   printf("--------------------------------------------------\n");
 }
 
@@ -143,6 +152,7 @@ static void sigchld_handler(int signum) {
     if (WIFEXITED(status) || WIFSIGNALED(status)) {
       /* A child has died */
       printf("Parent: Received SIGCHLD, child is dead.\n");
+      // process *temp = p_queue->head->next;
 
       dequeue(p_queue, p_queue->head->pid);
 
@@ -150,7 +160,7 @@ static void sigchld_handler(int signum) {
         printf(GREEN "Job's Done!\n" RST);
         exit(0);
       } else {
-        rotate_queue(p_queue);
+        // rotate_queue(p_queue);
 
         fprintf(stderr, "Proccess with pid=%ld is about to begin...\n",
                 (long int)p_queue->head->pid);
@@ -168,12 +178,14 @@ static void sigchld_handler(int signum) {
         }
       }
     }
+
     if (WIFSTOPPED(status)) {
       /* A child has stopped due to SIGSTOP/SIGTSTP, etc... */
       printf("Parent: Child has been stopped. Moving right along...\n");
+
       // rotate queue
       rotate_queue(p_queue);
-
+      dequeue(p_queue, 0);  // maybe for debugging
       if (is_empty(p_queue)) {
         printf(GREEN "Job's Done!\n" RST);
         exit(0);
